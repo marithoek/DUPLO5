@@ -6,7 +6,7 @@ let tasks = JSON.parse(localStorage.getItem("tasks") || "[]");
 
 // ----------- render ---------------------------------------------------
 function render() {
-  // sorteer op dateAdded (nieuwste eerst)
+  // sorteer op dateAdded (oudste eerst)
   tasks.sort((a, b) => a.dateAdded - b.dateAdded); // oudste eerst
 
   const openList = $("#openList");

@@ -1,33 +1,75 @@
-// elementen ophalen
-const input = document.getElementById("taskInput");
-const list = document.getElementById("taskList");
-const addBtn = document.getElementById("addBtn");
+// ----------- helpers --------------------------------------------------
+const $ = (sel) => document.querySelector(sel);
 
-// taak toevoegen
-function addTask() {
-  const text = input.value.trim();
-  if (!text) return;
+// Haal taken op uit localStorage of leeg array
+let tasks = JSON.parse(localStorage.getItem("tasks") || "[]");
 
-  const li = document.createElement("li");
-  li.className =
-    "list-group-item d-flex justify-content-between align-items-center";
-  li.innerHTML = `
-    <span>${text}</span>
-    <button class="btn btn-sm btn-danger">×</button>
-  `;
+// ----------- render ---------------------------------------------------
+function render() {
+  // sorteer op dateAdded (nieuwste eerst)
+  tasks.sort((a, b) => a.dateAdded - b.dateAdded); // oudste eerst
 
-  // verwijderknop
-  li.querySelector("button").addEventListener("click", () => li.remove());
+  const openList = $("#openList");
+  const doneList = $("#doneList");
+  openList.innerHTML = doneList.innerHTML = "";
 
-  list.appendChild(li);
-  input.value = "";
-  input.focus();
+  tasks.forEach((t, idx) => {
+    const li = document.createElement("li");
+    li.className =
+      "list-group-item d-flex justify-content-between align-items-start";
+
+    li.innerHTML = `
+      <div class="ms-2 me-auto">
+        <div class="fw-bold">${t.title}${
+      t.label ? ` <span class="badge bg-secondary">${t.label}</span>` : ""
+    }</div>
+        ${t.desc ? `<small>${t.desc}</small><br>` : ""}
+        ${t.deadline ? `<small>📅 ${t.deadline}</small>` : ""}
+      </div>
+      <div>
+        <input type="checkbox" ${t.done ? "checked" : ""} data-idx="${idx}">
+      </div>
+    `;
+
+    // checkbox‑toggle
+    li.querySelector("input").addEventListener("change", (e) => {
+      tasks[e.target.dataset.idx].done = e.target.checked;
+      saveAndRender();
+    });
+
+    (t.done ? doneList : openList).appendChild(li);
+  });
 }
 
-// klik op knop
-addBtn.addEventListener("click", addTask);
+// ----------- save -----------------------------------------------------
+function saveAndRender() {
+  localStorage.setItem("tasks", JSON.stringify(tasks));
+  render();
+}
 
-// enter‑toets in invoerveld
-input.addEventListener("keyup", (e) => {
-  if (e.key === "Enter") addTask();
+// ----------- submit ---------------------------------------------------
+$("#taskForm").addEventListener("submit", (e) => {
+  e.preventDefault();
+
+  const newTask = {
+    title: $("#titleInput").value.trim(),
+    desc: $("#descInput").value.trim(),
+    label: $("#labelInput").value.trim(),
+    deadline: $("#dateInput").value,
+    dateAdded: Date.now(),
+    done: false,
+  };
+
+  if (!newTask.title) return; // titel is verplicht
+
+  tasks.push(newTask);
+
+  // formulier resetten
+  e.target.reset();
+  $("#titleInput").focus();
+
+  saveAndRender();
 });
+
+// ----------- init -----------------------------------------------------
+render();
